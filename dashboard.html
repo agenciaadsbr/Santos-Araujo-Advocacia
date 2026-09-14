@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads — Santos Araújo Advocacia</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0A0A0A;
+    --card:#171717;
+    --card-alt:#1D1D1D;
+    --border:rgba(255,255,255,0.08);
+    --text:#F5F5F5;
+    --text-soft:#A3A3A3;
+    --text-faint:#6B6B6B;
+    --whatsapp:#25D366;
+    --danger:#E5484D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit; cursor:pointer;}
+  input{font-family:inherit;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- login ---------- */
+  #loginScreen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    width:100%; max-width:340px; background:var(--card); border:1px solid var(--border);
+    border-radius:14px; padding:32px 28px;
+  }
+  .login-card h1{font-size:1rem; font-weight:600; margin:0 0 4px; letter-spacing:0.02em;}
+  .login-card p{font-size:0.8rem; color:var(--text-faint); margin:0 0 24px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:0.72rem; color:var(--text-soft); margin-bottom:6px;}
+  .field input{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border);
+    background:#0F0F0F; color:var(--text); font-size:0.88rem;
+  }
+  .field input:focus{outline:none; border-color:rgba(255,255,255,0.25);}
+  .login-btn{
+    width:100%; margin-top:8px; padding:11px; border-radius:8px; border:none;
+    background:#F5F5F5; color:#0A0A0A; font-weight:600; font-size:0.85rem;
+  }
+  .login-btn:hover{background:#fff;}
+  .login-btn:disabled{opacity:0.5; cursor:default;}
+  .login-error{margin-top:12px; font-size:0.78rem; color:var(--danger); display:none;}
+
+  /* ---------- dashboard shell ---------- */
+  #dashboardScreen{display:none; padding:36px 0 60px;}
+  .topbar{
+    display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; gap:16px; flex-wrap:wrap;
+  }
+  .topbar h1{
+    font-size:1.15rem; font-weight:700; letter-spacing:0.02em; margin:0;
+  }
+  .topbar .subtitle{font-size:0.82rem; color:var(--text-faint); margin-top:6px;}
+  .logout-btn{
+    background:var(--card); border:1px solid var(--border); color:var(--text-soft);
+    padding:9px 16px; border-radius:8px; font-size:0.78rem; font-weight:600; letter-spacing:0.04em;
+  }
+  .logout-btn:hover{color:var(--text); border-color:rgba(255,255,255,0.2);}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:22px 22px 20px; margin-bottom:20px;
+  }
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;
+  }
+  .card-head h2{font-size:0.86rem; font-weight:600; margin:0; color:var(--text);}
+
+  .date-filter{display:flex; align-items:center; gap:8px; font-size:0.76rem; color:var(--text-soft);}
+  .date-filter input{
+    background:#0F0F0F; border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:6px 8px; font-size:0.76rem; color-scheme:dark;
+  }
+  .date-filter button{
+    background:var(--card-alt); border:1px solid var(--border); color:var(--text-soft);
+    border-radius:6px; padding:6px 12px; font-size:0.74rem; font-weight:600;
+  }
+  .date-filter button:hover{color:var(--text);}
+
+  .chart-wrap{height:260px; position:relative;}
+  .chart-legend{display:flex; gap:22px; margin-top:16px; flex-wrap:wrap; justify-content:center;}
+  .chart-legend span{display:flex; align-items:center; gap:7px; font-size:0.76rem; color:var(--text-soft);}
+  .chart-legend .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  table{width:100%; border-collapse:collapse; font-size:0.82rem;}
+  thead th{
+    text-align:left; font-size:0.7rem; font-weight:600; color:var(--text-faint);
+    letter-spacing:0.05em; text-transform:uppercase; padding:0 10px 10px; border-bottom:1px solid var(--border);
+  }
+  tbody td{padding:11px 10px; border-bottom:1px solid var(--border); color:var(--text-soft); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody td.strong{color:var(--text); font-weight:500;}
+  .empty-row td{text-align:center; color:var(--text-faint); padding:28px 10px; font-size:0.82rem;}
+
+  .wa-btn{
+    display:inline-flex; align-items:center; gap:6px; background:var(--card-alt);
+    border:1px solid var(--border); color:var(--text-soft); padding:6px 12px;
+    border-radius:100px; font-size:0.74rem; font-weight:600; white-space:nowrap;
+  }
+  .wa-btn:hover{color:var(--whatsapp); border-color:rgba(37,211,102,0.4);}
+  .wa-btn svg{width:13px; height:13px;}
+
+  .table-scroll{overflow-x:auto;}
+
+  @media(max-width:640px){
+    .wrap{padding:0 16px;}
+    #dashboardScreen{padding:24px 0 40px;}
+    .card{padding:18px 16px;}
+    .chart-wrap{height:220px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>Painel de Leads</h1>
+    <p>Santos Araújo Advocacia</p>
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginUser">Usuário</label>
+        <input type="text" id="loginUser" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Senha</label>
+        <input type="password" id="loginPass" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">Entrar</button>
+      <div class="login-error" id="loginError">Usuário ou senha incorretos.</div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div id="dashboardScreen">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>LEADS — SANTOS ARAÚJO</h1>
+        <div class="subtitle" id="totalLeadsSubtitle">Carregando...</div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">SAIR</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Evolução diária</h2>
+        <div class="date-filter">
+          <span>DE</span>
+          <input type="date" id="filterFrom">
+          <span>ATÉ</span>
+          <input type="date" id="filterTo">
+          <button id="filterApply">Aplicar</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="evolutionChart"></canvas></div>
+      <div class="chart-legend">
+        <span><i class="dot" style="background:#F5F5F5"></i>Visitas</span>
+        <span><i class="dot" style="background:#25D366"></i>Cadastros</span>
+        <span><i class="dot" style="background:#F5B942"></i>Taxa de conversão %</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Conversão por LP</h2></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>LP</th><th>Visitas</th><th>Leads</th><th>Conv.</th></tr></thead>
+          <tbody id="convTableBody"><tr class="empty-row"><td colspan="4">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Leads</h2></div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Nome</th><th>WhatsApp</th><th>LP</th><th>Origem</th><th>Data</th><th>Ação</th></tr></thead>
+          <tbody id="leadsTableBody"><tr class="empty-row"><td colspan="6">Carregando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var SUPABASE_URL = "https://qxhnjzyhtllmtdrcyygi.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4aG5qenlodGxsbXRkcmN5eWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzczNjgsImV4cCI6MjA5NzgxMzM2OH0.DWf4I_x9F--H7ZZHUt_n4V3B__Nlsf1jNZdUV0vNBLU";
+  var SITE = "santos-araujo";
+  var USER_TO_EMAIL = { "admin": "admin@santos-araujo.adsbr.internal" };
+
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  var loginScreen = document.getElementById('loginScreen');
+  var dashboardScreen = document.getElementById('dashboardScreen');
+  var loginForm = document.getElementById('loginForm');
+  var loginBtn = document.getElementById('loginBtn');
+  var loginError = document.getElementById('loginError');
+
+  function showDashboard(){
+    loginScreen.style.display = 'none';
+    dashboardScreen.style.display = 'block';
+    loadAll();
+  }
+
+  loginForm.addEventListener('submit', async function(e){
+    e.preventDefault();
+    loginError.style.display = 'none';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Entrando...';
+    var userRaw = document.getElementById('loginUser').value.trim().toLowerCase();
+    var pass = document.getElementById('loginPass').value;
+    var email = USER_TO_EMAIL[userRaw];
+    if(!email){
+      loginError.style.display = 'block';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Entrar';
+      return;
+    }
+    var result = await supabase.auth.signInWithPassword({ email: email, password: pass });
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Entrar';
+    if(result.error){
+      loginError.style.display = 'block';
+      return;
+    }
+    showDashboard();
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async function(){
+    await supabase.auth.signOut();
+    window.location.reload();
+  });
+
+  // restore existing session on load
+  supabase.auth.getSession().then(function(res){
+    if(res.data && res.data.session){
+      showDashboard();
+    }
+  });
+
+  // ---------- data loading ----------
+  var chartInstance = null;
+
+  function fmtDateInput(d){
+    return d.toISOString().slice(0,10);
+  }
+  function defaultRange(){
+    var to = new Date();
+    var from = new Date();
+    from.setDate(from.getDate() - 29);
+    return { from: from, to: to };
+  }
+
+  var range = defaultRange();
+  document.getElementById('filterFrom').value = fmtDateInput(range.from);
+  document.getElementById('filterTo').value = fmtDateInput(range.to);
+
+  document.getElementById('filterApply').addEventListener('click', function(){
+    loadAll();
+  });
+
+  async function loadAll(){
+    var fromVal = document.getElementById('filterFrom').value;
+    var toVal = document.getElementById('filterTo').value;
+    var fromDate = fromVal ? new Date(fromVal + 'T00:00:00Z') : range.from;
+    var toDate = toVal ? new Date(toVal + 'T23:59:59Z') : range.to;
+
+    var visitsRes = await supabase
+      .from('lp_visits')
+      .select('id, created_at')
+      .eq('site', SITE)
+      .gte('created_at', fromDate.toISOString())
+      .lte('created_at', toDate.toISOString());
+
+    var leadsRes = await supabase
+      .from('lp_leads')
+      .select('id, nome, whatsapp, origem, site, created_at')
+      .eq('site', SITE)
+      .gte('created_at', fromDate.toISOString())
+      .lte('created_at', toDate.toISOString())
+      .order('created_at', { ascending: false });
+
+    var allLeadsCountRes = await supabase
+      .from('lp_leads')
+      .select('id', { count: 'exact', head: true })
+      .eq('site', SITE);
+
+    var visits = (visitsRes.data || []);
+    var leads = (leadsRes.data || []);
+    var totalLeadsAllTime = allLeadsCountRes.count || 0;
+
+    document.getElementById('totalLeadsSubtitle').textContent =
+      totalLeadsAllTime + (totalLeadsAllTime === 1 ? ' lead recebido no total' : ' leads recebidos no total');
+
+    renderChart(visits, leads, fromDate, toDate);
+    renderConvTable(visits, leads);
+    renderLeadsTable(leads);
+  }
+
+  function dayKey(dateStr){
+    return dateStr.slice(0,10);
+  }
+
+  function renderChart(visits, leads, fromDate, toDate){
+    var days = [];
+    var cursor = new Date(fromDate);
+    cursor.setUTCHours(0,0,0,0);
+    var end = new Date(toDate);
+    end.setUTCHours(0,0,0,0);
+    while(cursor <= end){
+      days.push(fmtDateInput(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    var visitsByDay = {};
+    visits.forEach(function(v){
+      var k = dayKey(v.created_at);
+      visitsByDay[k] = (visitsByDay[k] || 0) + 1;
+    });
+    var leadsByDay = {};
+    leads.forEach(function(l){
+      var k = dayKey(l.created_at);
+      leadsByDay[k] = (leadsByDay[k] || 0) + 1;
+    });
+
+    var visitSeries = [];
+    var leadSeries = [];
+    var convSeries = [];
+    days.forEach(function(d){
+      var v = visitsByDay[d] || 0;
+      var l = leadsByDay[d] || 0;
+      visitSeries.push(v);
+      leadSeries.push(l);
+      convSeries.push(v > 0 ? +(l / v * 100).toFixed(1) : 0);
+    });
+
+    var labels = days.map(function(d){
+      var parts = d.split('-');
+      return parts[2] + '/' + parts[1];
+    });
+
+    var ctx = document.getElementById('evolutionChart').getContext('2d');
+    if(chartInstance){ chartInstance.destroy(); }
+
+    if(days.length === 0 || visits.length + leads.length === 0){
+      ctx.clearRect(0,0,ctx.canvas.width, ctx.canvas.height);
+    }
+
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Visitas',
+            data: visitSeries,
+            borderColor: '#F5F5F5',
+            backgroundColor: 'rgba(245,245,245,0.08)',
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Cadastros',
+            data: leadSeries,
+            borderColor: '#25D366',
+            backgroundColor: 'rgba(37,211,102,0.1)',
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Taxa de conversão %',
+            data: convSeries,
+            borderColor: '#F5B942',
+            backgroundColor: 'transparent',
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2,
+            borderDash: [4,3],
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#171717',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            titleColor: '#F5F5F5',
+            bodyColor: '#A3A3A3'
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#6B6B6B', font: { size: 10 }, maxRotation: 0, autoSkip: true }
+          },
+          y: {
+            position: 'left',
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#6B6B6B', font: { size: 10 }, precision: 0 },
+            beginAtZero: true
+          },
+          y1: {
+            position: 'right',
+            grid: { display: false },
+            ticks: { color: '#6B6B6B', font: { size: 10 }, callback: function(v){ return v + '%'; } },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  function renderConvTable(visits, leads){
+    var tbody = document.getElementById('convTableBody');
+    var totalVisits = visits.length;
+    var totalLeads = leads.length;
+    var conv = totalVisits > 0 ? (totalLeads / totalVisits * 100).toFixed(1) : '0.0';
+
+    if(totalVisits === 0 && totalLeads === 0){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum dado encontrado</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML =
+      '<tr>' +
+        '<td class="strong">Santos Araújo</td>' +
+        '<td>' + totalVisits + '</td>' +
+        '<td>' + totalLeads + '</td>' +
+        '<td>' + conv + '%</td>' +
+      '</tr>';
+  }
+
+  function fmtDateDisplay(iso){
+    var d = new Date(iso);
+    var dd = String(d.getDate()).padStart(2,'0');
+    var mm = String(d.getMonth()+1).padStart(2,'0');
+    var yy = d.getFullYear();
+    var hh = String(d.getHours()).padStart(2,'0');
+    var min = String(d.getMinutes()).padStart(2,'0');
+    return dd + '/' + mm + '/' + yy + ' ' + hh + ':' + min;
+  }
+
+  function waHref(nome, whatsapp){
+    var digits = (whatsapp || '').replace(/\D/g, '');
+    var msg = 'Olá, ' + nome + '. Recebemos seu contato através da Santos Araújo Advocacia e gostaria de dar continuidade ao seu atendimento.';
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+  }
+
+  function esc(s){
+    var div = document.createElement('div');
+    div.textContent = s == null ? '' : s;
+    return div.innerHTML;
+  }
+
+  function renderLeadsTable(leads){
+    var tbody = document.getElementById('leadsTableBody');
+    if(!leads || leads.length === 0){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Nenhum lead encontrado</td></tr>';
+      return;
+    }
+    tbody.innerHTML = leads.map(function(l){
+      return '<tr>' +
+        '<td class="strong">' + esc(l.nome) + '</td>' +
+        '<td>' + esc(l.whatsapp) + '</td>' +
+        '<td>' + esc(l.site) + '</td>' +
+        '<td>' + esc(l.origem || '—') + '</td>' +
+        '<td>' + fmtDateDisplay(l.created_at) + '</td>' +
+        '<td><a class="wa-btn" href="' + waHref(l.nome, l.whatsapp) + '" target="_blank" rel="noopener">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.42-1.35a9.9 9.9 0 0 0 4.62 1.15h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.64-1.03-5.13-2.9-7C17.17 3.04 14.67 2 12.04 2zm0 18.11h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.11.82.83-3.03-.2-.31a8.18 8.18 0 0 1-1.26-4.35c0-4.52 3.68-8.2 8.24-8.2 2.2 0 4.27.86 5.83 2.42a8.15 8.15 0 0 1 2.41 5.79c0 4.52-3.68 8.19-8.24 8.19z"/></svg>' +
+          'WhatsApp' +
+        '</a></td>' +
+      '</tr>';
+    }).join('');
+  }
+})();
+</script>
+</body>
+</html>

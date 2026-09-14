@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Encaminhando para o WhatsApp | Santos Araújo Advocacia</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#2B2018;
+    --terracotta:#A8562E;
+    --gold:#C1873F;
+    --whatsapp:#25D366;
+    --cream:#FBF4E8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 30% 20%, #4A3627, var(--bg-deep) 70%);
+    font-family:'Inter',sans-serif; color:var(--cream); padding:24px;
+  }
+  .card{
+    max-width:440px; width:100%; text-align:center;
+  }
+  h1{font-family:'Fraunces',serif; font-weight:500; font-size:1.7rem; margin:0 0 12px;}
+  p{color:rgba(251,244,232,0.72); font-size:1rem; line-height:1.6; margin:0 0 34px;}
+  .ring-wrap{position:relative; width:120px; height:120px; margin:0 auto 34px;}
+  svg{transform:rotate(-90deg);}
+  circle{fill:none; stroke-width:5;}
+  .ring-bg{stroke:rgba(251,244,232,0.15);}
+  .ring-fg{stroke:var(--whatsapp); stroke-linecap:round; stroke-dasharray:314; stroke-dashoffset:314; transition:stroke-dashoffset 1s linear;}
+  .ring-num{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-size:2.1rem;
+  }
+  .manual-link{
+    display:inline-flex; align-items:center; gap:8px; margin-top:8px;
+    color:var(--gold); font-size:0.9rem; font-weight:600; border-bottom:1.5px solid var(--gold); padding-bottom:2px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="greeting">Obrigada pelo contato!</h1>
+    <p id="subtext">Estamos te encaminhando para o WhatsApp da Santos Araújo Advocacia.</p>
+    <div class="ring-wrap">
+      <svg width="120" height="120">
+        <circle class="ring-bg" cx="60" cy="60" r="50"/>
+        <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="50"/>
+      </svg>
+      <div class="ring-num" id="ringNum">5</div>
+    </div>
+    <a href="#" id="manualLink" class="manual-link">Ir agora mesmo →</a>
+  </div>
+
+<script>
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var nome = params.get('nome') || '';
+  var telefone = params.get('telefone') || '';
+  var firstName = nome.trim().split(' ')[0] || '';
+
+  document.getElementById('greeting').textContent = firstName ? ('Obrigada, ' + firstName + '!') : 'Obrigada pelo contato!';
+  document.getElementById('subtext').textContent = 'Estamos te encaminhando para o WhatsApp da Dra. Carolina para continuar a conversa.';
+
+  var msg = 'Olá! Meu nome é ' + nome + '. Preenchi o formulário sobre pensão alimentícia.'
+    + ' Meu telefone: ' + telefone + '.';
+  var waUrl = 'https://wa.me/+5511980145922?text=' + encodeURIComponent(msg);
+  document.getElementById('manualLink').href = waUrl;
+
+  var seconds = 5;
+  var ringNum = document.getElementById('ringNum');
+  var ringFg = document.getElementById('ringFg');
+  var circumference = 314;
+  ringFg.style.strokeDashoffset = circumference;
+
+  var interval = setInterval(function(){
+    seconds -= 1;
+    ringNum.textContent = seconds > 0 ? seconds : '';
+    ringFg.style.strokeDashoffset = circumference - (circumference * ((5-seconds)/5));
+    if(seconds <= 0){
+      clearInterval(interval);
+      window.location.href = waUrl;
+    }
+  }, 1000);
+})();
+</script>
+</body>
+</html>
