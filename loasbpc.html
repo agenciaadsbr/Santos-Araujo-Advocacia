@@ -819,7 +819,11 @@
       } catch(err){ /* tracking should never block the redirect */ }
     }
     var params = new URLSearchParams({nome: nome, telefone: telefone});
-    window.location.href = 'redirect2.html?' + params.toString();
+    // Abre a página de agradecimento na janela inteira (fora do iframe do WordPress),
+    // porque o wa.me se recusa a abrir dentro de iframe.
+    var destino = new URL('redirect2.html?' + params.toString(), window.location.href).href;
+    try { window.top.location.href = destino; }
+    catch(err){ window.location.href = destino; }
   });
 })();
 </script>

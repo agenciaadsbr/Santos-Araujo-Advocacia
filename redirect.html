@@ -50,7 +50,7 @@
       </svg>
       <div class="ring-num" id="ringNum">5</div>
     </div>
-    <a href="#" id="manualLink" class="manual-link">Ir agora mesmo →</a>
+    <a href="#" id="manualLink" class="manual-link" target="_top">Ir agora mesmo →</a>
   </div>
 
 <script>
@@ -80,7 +80,7 @@
     ringFg.style.strokeDashoffset = circumference - (circumference * ((5-seconds)/5));
     if(seconds <= 0){
       clearInterval(interval);
-      window.location.href = waUrl;
+      try { window.top.location.href = waUrl; } catch(err){ window.location.href = waUrl; }
     }
   }, 1000);
 })();
