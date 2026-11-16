@@ -201,8 +201,13 @@
 (function(){
   var SUPABASE_URL = "https://qxhnjzyhtllmtdrcyygi.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4aG5qenlodGxsbXRkcmN5eWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzczNjgsImV4cCI6MjA5NzgxMzM2OH0.DWf4I_x9F--H7ZZHUt_n4V3B__Nlsf1jNZdUV0vNBLU";
-  var SITES = ["santos-araujo", "santos-araujo-bpc"];
-  var SITE_LABELS = { "santos-araujo": "Alimentos", "santos-araujo-bpc": "BPC/LOAS" };
+  var SITES = ["santos-araujo", "santos-araujo-alimentos", "santos-araujo-divorcio", "santos-araujo-bpc"];
+  var SITE_LABELS = {
+    "santos-araujo": "Alimentos (index)",
+    "santos-araujo-alimentos": "Alimentos (/alimentos)",
+    "santos-araujo-divorcio": "Divórcio, guarda e visitas",
+    "santos-araujo-bpc": "BPC/LOAS"
+  };
   var USER_TO_EMAIL = { "admin": "admin@santos-araujo.adsbr.internal" };
 
   var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
